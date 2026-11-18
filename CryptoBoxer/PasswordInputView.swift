@@ -2,11 +2,8 @@ import SwiftUI
 import CryptoKit
 import Combine
 
-class KeyStore: ObservableObject{
-    @Published var key: SymmetricKey? = nil
-}
-
 struct PasswordInputView: View {
+    @ObservedObject var cryptoBoxerManager = CryptoBoxerManager.shared
     @State private var password: String = ""
     @State private var rePassword: String = ""
     @State private var message: String = ""
@@ -17,7 +14,6 @@ struct PasswordInputView: View {
     let parallelism = 4
     @State private var passRePassword = false
     @State private var isProcessing = false
-    @EnvironmentObject var keyStore: KeyStore
     @Environment(\.dismiss) private var dismiss
     
     var body: some View{
@@ -37,7 +33,7 @@ struct PasswordInputView: View {
                 .onSubmit {
                     Task {
                         await submitPassword()
-                        }
+                    }
                 }
             if passRePassword {
                 SecureField("パスワードを入力(再)", text: $rePassword)
@@ -46,9 +42,9 @@ struct PasswordInputView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .onSubmit {
                         Task {
-                                await submitPassword()
+                            await submitPassword()
                         }
-                }
+                    }
             }
             
             Button {
@@ -102,7 +98,7 @@ struct PasswordInputView: View {
         .onAppear {setMessage()}
     }
     
-    func submitPassword() async {
+    private func submitPassword() async {
         if password.isEmpty || salt.isEmpty {
             return
         }
@@ -119,20 +115,20 @@ struct PasswordInputView: View {
         do {
             isProcessing = true
             message = "⚠️ 現在設定中です。お待ちください。"
-            keyStore.key = try await CryptoBoxerManager.shared.makeKey(password, salt, memorySize, iterations, parallelism)
+            try await CryptoBoxerManager.shared.makeKey(password, salt, memorySize, iterations, parallelism)
         } catch {
-            print("鍵の生成に失敗しました： \(error)")
+            warning = "鍵の生成に失敗しました。"
         }
         
-        dismiss()
         password = ""
         rePassword = ""
         message = ""
         warning = ""
+        dismiss()
     }
     
-    func setMessage() {
-        if keyStore.key != nil {
+    private func setMessage() {
+        if cryptoBoxerManager.isKeySet {
             message = "✅ パスワードは設定済みです。変更したい場合は設定し直してください。"
         } else {
             message = "❌ まだパスワードは設定されていません。"

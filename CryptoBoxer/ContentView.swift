@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var keyStore: KeyStore
+    @ObservedObject var cryptoBoxerManager = CryptoBoxerManager.shared
     @State private var passwordMessaga = ""
     @State private var importMessaga = ""
     @State private var cryptedMessaga = ""
@@ -55,16 +55,16 @@ struct ContentView: View {
             .onAppear {
                 setMessage()
             }
-            .onChange(of: keyStore.key != nil) {
+            .onChange(of: cryptoBoxerManager.isKeySet) {
                 setMessage()
             }
         }
     }
     
-    func setMessage() {
+    private func setMessage() {
         manualMessage = "操作説明"
         
-        if keyStore.key != nil {
+        if cryptoBoxerManager.isKeySet {
             passwordMessaga = "パスワード設定／鍵生成⭕️"
             importMessaga = "平文ファイル取り込み🔑"
             cryptedMessaga = "暗号化済みファイル一覧🔑"

@@ -2,10 +2,10 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ViewerView: View {
+    @ObservedObject var cryptoBoxerManager = CryptoBoxerManager.shared
     @State private var message: String = ""
     @State private var warning: String = ""
     @State private var files: [URL] = []
-    @EnvironmentObject var keyStore: KeyStore
     @State private var isShowingMessage: Bool = false
     let buttonWidth: CGFloat = 120
     
@@ -113,7 +113,7 @@ struct ViewerView: View {
                         }
                         .frame(height: 120)
                         .onTapGesture {
-                            guard let key = keyStore.key else { return }
+                            if !cryptoBoxerManager.isKeySet { return }
                             Task{
                                 do {
                                     let tmpFolder = try CryptoBoxerManager.shared.getFolderPath(folderName: "tmp")
@@ -125,7 +125,7 @@ struct ViewerView: View {
                                     warning = ""
                                     if FileManager.default.fileExists(atPath: tmpURL.path) { return }
                                     let encrypted = try Data(contentsOf: url)
-                                    let decrypted = try CryptoBoxerManager.shared.decrypt(data: encrypted, using: key)
+                                    let decrypted = try CryptoBoxerManager.shared.decrypt(data: encrypted)
                                     try decrypted.write(to: tmpURL)
                                 } catch {
                                     setMessages("", "展開中にエラーが発生しました。\nパスワード（復号キー）に誤りがあるか、\nまたはファイルが改ざんされている可能性があります。")
@@ -142,7 +142,7 @@ struct ViewerView: View {
         }
     }
     
-    func loadFiles() {
+    private func loadFiles() {
         let fileManager = FileManager.default
         do {
             let appSupport = try fileManager.url(
@@ -160,13 +160,13 @@ struct ViewerView: View {
             )
             files = filterHiddenFiles(allFiles: allFiles)
         } catch {
-            debugPrint("読み込みエラー", error)
+            setMessages("", "ファイルの読み込みに失敗しました。")
         }
     }
     
-    func downloadEncryptFiles() {
+    private func downloadEncryptFiles() {
         let fileManager = FileManager.default
-
+        
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -176,7 +176,7 @@ struct ViewerView: View {
         DispatchQueue.main.async {
             setMessages("保存中...", "")
         }
-
+        
         if panel.runModal() == .OK, let selectedFolder = panel.url {
             let canAccess = selectedFolder.startAccessingSecurityScopedResource()
             defer {
@@ -184,27 +184,27 @@ struct ViewerView: View {
                     selectedFolder.stopAccessingSecurityScopedResource()
                 }
             }
-
+            
             do {
                 let storageFolder = try CryptoBoxerManager.shared.getFolderPath(folderName: "storage")
-
+                
                 let files = try fileManager.contentsOfDirectory(
                     at: storageFolder,
                     includingPropertiesForKeys: nil
                 ).filter {
                     !$0.hasDirectoryPath
                 }
-
+                
                 for fileURL in files {
                     let destinationURL = generateUniqueURL(for: fileURL.lastPathComponent, in: selectedFolder)
-
+                    
                     if fileManager.fileExists(atPath: destinationURL.path) {
                         try fileManager.removeItem(at: destinationURL)
                     }
                     try fileManager.copyItem(at: fileURL, to: destinationURL)
                 }
                 setMessages("暗号化されたファイルのアップロードが完了しました。", "")
-
+                
             } catch {
                 setMessages("", "ファイルの保存に失敗しました。")
             }
@@ -215,7 +215,7 @@ struct ViewerView: View {
         }
     }
     
-    func importFiles() {
+    private func importFiles() {
         let fileManager = FileManager.default
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.data]
@@ -252,9 +252,9 @@ struct ViewerView: View {
         }
     }
     
-    func downloadDecryptFiles() {
+    private func downloadDecryptFiles() {
         let fileManager = FileManager.default
-
+        
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -264,7 +264,7 @@ struct ViewerView: View {
         DispatchQueue.main.async {
             setMessages("保存中...", "")
         }
-
+        
         if panel.runModal() == .OK, let selectedFolder = panel.url {
             let canAccess = selectedFolder.startAccessingSecurityScopedResource()
             defer {
@@ -272,11 +272,11 @@ struct ViewerView: View {
                     selectedFolder.stopAccessingSecurityScopedResource()
                 }
             }
-
+            
             do {
                 let storageFolder = try CryptoBoxerManager.shared.getFolderPath(folderName: "storage")
                 let allFiles = try fileManager.contentsOfDirectory(at: storageFolder, includingPropertiesForKeys: nil)
-                guard let key = keyStore.key else {
+                if !cryptoBoxerManager.isKeySet {
                     setMessages("", "復号キーが見つかりません。パスワードを設定してください。")
                     return
                 }
@@ -285,12 +285,12 @@ struct ViewerView: View {
                 
                 for fileURL in filteringFiles {
                     let encryptedData = try Data(contentsOf: fileURL)
-                    let decryptedData = try CryptoBoxerManager.shared.decrypt(data: encryptedData, using: key)
+                    let decryptedData = try CryptoBoxerManager.shared.decrypt(data: encryptedData)
                     let destinationURL = generateUniqueURL(for: fileURL.lastPathComponent, in: selectedFolder)
                     try decryptedData.write(to: destinationURL)
                 }
                 setMessages("復号化したファイルのアップロードが完了しました。", "")
-
+                
             } catch {
                 setMessages("", "ファイルのアップロードに失敗しました。")
             }
@@ -301,19 +301,19 @@ struct ViewerView: View {
         }
     }
     
-    func setMessages(_ messageText: String, _ warningText: String) {
+    private func setMessages(_ messageText: String, _ warningText: String) {
         message = messageText
         warning = warningText
     }
     
-    func filterHiddenFiles(allFiles: [URL]) -> [URL] {
+    private func filterHiddenFiles(allFiles: [URL]) -> [URL] {
         let filteringFiles = allFiles.filter {
             !$0.lastPathComponent.hasPrefix(".")
         }
         return filteringFiles
     }
     
-    func generateUniqueURL(for fileName: String, in folderURL: URL) -> URL {
+    private func generateUniqueURL(for fileName: String, in folderURL: URL) -> URL {
         let fileManager = FileManager.default
         var destinationURL = folderURL.appendingPathComponent(fileName)
         

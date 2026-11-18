@@ -3,12 +3,12 @@ import AppKit
 import UniformTypeIdentifiers
 
 struct UploadView: View {
-    @EnvironmentObject var keyStore: KeyStore
+    @ObservedObject var cryptoBoxerManager = CryptoBoxerManager.shared
     @State private var message: String = "ファイルを選択すると設定したパスワードで暗号化されます。\n暗号化されたファイルはCryptoBoxerに取り込まれます。\nすでに暗号化したファイルは取り込まないでください。"
     @State private var warning: String = ""
     @State private var useUUIDName = false
     @State private var deleteFlag = false
-
+    
     var body: some View {
         VStack() {
             Text(warning)
@@ -37,8 +37,8 @@ struct UploadView: View {
         .frame(maxHeight: .infinity, alignment: .center)
     }
     
-    func openFile() {
-        guard keyStore.key != nil else {
+    private func openFile() {
+        if (!cryptoBoxerManager.isKeySet) {
             warning = "先にパスワードを設定してください。\n設定されていないと暗号化ができません"
             return
         }
@@ -56,8 +56,8 @@ struct UploadView: View {
         }
     }
     
-    func saveFile(_ sourceURL: URL) {
-        guard let key = keyStore.key else {
+    private func saveFile(_ sourceURL: URL) {
+        if (!cryptoBoxerManager.isKeySet) {
             warning = "パスワードが設定されていません。暗号化に失敗しました。"
             message = ""
             return
@@ -85,7 +85,7 @@ struct UploadView: View {
             
             let destination = storageFolder.appendingPathComponent(newName)
             let data = try Data(contentsOf: sourceURL)
-            let encrypted = try CryptoBoxerManager.shared.encrypt(data: data, using: key)
+            let encrypted = try CryptoBoxerManager.shared.encrypt(data: data)
             try encrypted.write(to: destination)
             if deleteFlag {
                 try FileManager.default.removeItem(at: sourceURL)
