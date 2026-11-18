@@ -2,44 +2,45 @@ import Foundation
 import CryptoKit
 import AppKit
 import SwiftArgon2
+import Combine
 
-class CryptoBoxerManager {
+class CryptoBoxerManager: ObservableObject {
+    @Published var isKeySet: Bool = false
     static let shared = CryptoBoxerManager()
-    private init() {}
+    private var keyStore: SymmetricKey?
     
-    private var count: Int = 0
-    
-    func makeKey(_ password: String, _ salt: String, _ memorySize: Int, _ iterations: Int, _ parallelism: Int) async throws -> SymmetricKey {
+    func makeKey(_ password: String, _ salt: String, _ memorySize: Int, _ iterations: Int, _ parallelism: Int) async throws {
         let passwordData = Data(password.utf8)
         let saltData = Data(salt.utf8)
-
+        
         let argon2 = try Argon2(params: Argon2Params(
-                parallelism: UInt32(parallelism),
-                tagLength: 32,
-                memorySize: UInt32(memorySize),
-                iterations:  UInt32(iterations),
-                variant: .argon2id
-            ))
-
+            parallelism: UInt32(parallelism),
+            tagLength: 32,
+            memorySize: UInt32(memorySize),
+            iterations:  UInt32(iterations),
+            variant: .argon2id
+        ))
+        
         let keyData = try await argon2.compute(
             password: passwordData,
             salt: saltData
         )
         
-        return SymmetricKey(data: keyData)
+        keyStore = SymmetricKey(data: keyData)
+        isKeySet = true
     }
     
-    func encrypt(data: Data, using key: SymmetricKey) throws -> Data {
-        let sealedBox = try AES.GCM.seal(data, using: key)
+    func encrypt(data: Data) throws -> Data {
+        let sealedBox = try AES.GCM.seal(data, using: keyStore!)
         guard let combined = sealedBox.combined else {
             throw NSError(domain: "EncryptionError", code: 0, userInfo: nil)
         }
         return combined
     }
     
-    func decrypt(data: Data, using key: SymmetricKey) throws -> Data {
+    func decrypt(data: Data) throws -> Data {
         let sealedBox = try AES.GCM.SealedBox(combined: data)
-        return try AES.GCM.open(sealedBox, using: key)
+        return try AES.GCM.open(sealedBox, using: keyStore!)
     }
     
     func getFolderPath(folderName: String) throws -> URL {
@@ -53,12 +54,12 @@ class CryptoBoxerManager {
         let folderPath = appSupport
             .appendingPathComponent("CryptoBoxer")
             .appendingPathComponent(folderName)
-            
+        
         try fileManager.createDirectory(
-                    at: folderPath,
-                    withIntermediateDirectories: true,
-                    attributes: nil
-                )
+            at: folderPath,
+            withIntermediateDirectories: true,
+            attributes: nil
+        )
         return folderPath
     }
     
