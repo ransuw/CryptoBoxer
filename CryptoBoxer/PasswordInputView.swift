@@ -15,6 +15,10 @@ struct PasswordInputView: View {
     @State private var passRePassword = false
     @State private var isProcessing = false
     @Environment(\.dismiss) private var dismiss
+    @State private var isLeftButtonInvalid = false
+    @State private var isRightButtonInvalid = true
+    @State private var isButtonsInvalid = false
+    @State private var tmpSalt = "CryptoBookmark"
     
     var body: some View{
         VStack {
@@ -83,8 +87,37 @@ struct PasswordInputView: View {
             
             HStack {
                 Text("ソルト：")
-                TextField("CryptoBoxer", text: $salt)
+                Button("◀︎") {
+                    Task{
+                        await leftButton()
+                    }
+                }
+                .disabled(isLeftButtonInvalid)
+                Button("▶︎") {
+                    Task{
+                        await rightButton()
+                    }
+                }
+                .disabled(isRightButtonInvalid)
+                TextField("任意のソルトを入力してください。", text: $salt)
                     .frame(width: 200)
+                    .onChange(of: salt) {
+                        Task {
+                            await saltButtonControl()
+                        }
+                    }
+                    .disabled(!isButtonsInvalid)
+                    .onSubmit {
+                        Task {
+                            await submitPassword()
+                        }
+                    }
+                Button("入力") {
+                    Task{
+                        await inputButton()
+                    }
+                }
+                .disabled(isButtonsInvalid)
             }
             
             HStack {
@@ -92,6 +125,7 @@ struct PasswordInputView: View {
                 Text("並列度：\(parallelism)")
             }
             Text("⚠️試行回数／ソルトを少しでも変更すると生成される鍵が完全に異なるものになります。")
+            Text("⚠️ソルトには8バイト以上の文字列が必要になります。")
         }
         .padding()
         .frame(maxHeight: .infinity, alignment: .center)
@@ -100,6 +134,10 @@ struct PasswordInputView: View {
     
     private func submitPassword() async {
         if password.isEmpty || salt.isEmpty {
+            return
+        }
+        if (salt.utf8.count < 8) {
+            warning = "8バイト以上のソルトを入力してください。"
             return
         }
         if passRePassword {
@@ -133,5 +171,41 @@ struct PasswordInputView: View {
         } else {
             message = "❌ まだパスワードは設定されていません。"
         }
+    }
+    
+    private func leftButton() async {
+        salt = String(salt.dropLast())
+    }
+    
+    private func rightButton() async {
+        let saltLength = salt.count
+        let tmpSaltLength = tmpSalt.count
+        if (saltLength < tmpSaltLength) {
+            salt = String(tmpSalt.prefix(saltLength + 1))
+        }
+    }
+    
+    private func saltButtonControl() async {
+        if (!isButtonsInvalid) {
+            let saltLength = salt.count
+            let tmpSaltLength = tmpSalt.count
+            if (saltLength == tmpSaltLength) {
+                isRightButtonInvalid = true
+            } else {
+                isRightButtonInvalid = false
+            }
+            if (saltLength <= 1) {
+                isLeftButtonInvalid = true
+            } else {
+                isLeftButtonInvalid = false
+            }
+        }
+    }
+    
+    private func inputButton() async {
+        isLeftButtonInvalid = true
+        isRightButtonInvalid = true
+        isButtonsInvalid = true
+        salt = ""
     }
 }
