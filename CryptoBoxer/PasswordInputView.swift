@@ -9,12 +9,15 @@ struct PasswordInputView: View {
     @State private var message: String = ""
     @State private var warning: String = ""
     @State private var iterations = 30
-    @State private var salt = "CryptoBoxer"
+    @State private var salt = "CryptoBoxerSalt"
     let memorySize = 65536
     let parallelism = 4
     @State private var passRePassword = false
     @State private var isProcessing = false
     @Environment(\.dismiss) private var dismiss
+    @State private var isLeftButtonInvalid = false
+    @State private var isRightButtonInvalid = true
+    @State private var isButtonsInvalid = false
     
     var body: some View{
         VStack {
@@ -83,8 +86,37 @@ struct PasswordInputView: View {
             
             HStack {
                 Text("ソルト：")
-                TextField("CryptoBoxer", text: $salt)
+                Button("◀︎") {
+                    Task{
+                        await leftButton()
+                    }
+                }
+                .disabled(isLeftButtonInvalid)
+                Button("▶︎") {
+                    Task{
+                        await rightButton()
+                    }
+                }
+                .disabled(isRightButtonInvalid)
+                TextField("任意のソルトを入力してください。", text: $salt)
                     .frame(width: 200)
+                    .onChange(of: salt) {
+                        Task {
+                            await saltButtonControl()
+                        }
+                    }
+                    .disabled(!isButtonsInvalid)
+                    .onSubmit {
+                        Task {
+                            await submitPassword()
+                        }
+                    }
+                Button("入力") {
+                    Task{
+                        await inputButton()
+                    }
+                }
+                .disabled(isButtonsInvalid)
             }
             
             HStack {
@@ -92,6 +124,7 @@ struct PasswordInputView: View {
                 Text("並列度：\(parallelism)")
             }
             Text("⚠️試行回数／ソルトを少しでも変更すると生成される鍵が完全に異なるものになります。")
+            Text("⚠️ソルトには8バイト以上の文字列が必要になります。")
         }
         .padding()
         .frame(maxHeight: .infinity, alignment: .center)
@@ -100,6 +133,10 @@ struct PasswordInputView: View {
     
     private func submitPassword() async {
         if password.isEmpty || salt.isEmpty {
+            return
+        }
+        if (salt.utf8.count < 8) {
+            warning = "8バイト以上のソルトを入力してください。"
             return
         }
         if passRePassword {
@@ -115,6 +152,7 @@ struct PasswordInputView: View {
         do {
             isProcessing = true
             message = "⚠️ 現在設定中です。お待ちください。"
+            warning = ""
             try await CryptoBoxerManager.shared.makeKey(password, salt, memorySize, iterations, parallelism)
         } catch {
             warning = "鍵の生成に失敗しました。"
@@ -133,5 +171,44 @@ struct PasswordInputView: View {
         } else {
             message = "❌ まだパスワードは設定されていません。"
         }
+    }
+    
+    private func leftButton() async {
+        if (salt.utf8.count > 8){
+            salt = String(salt.dropLast())
+        }
+    }
+    
+    let defaultSalt = "CryptoBoxerSalt"
+    private func rightButton() async {
+        let saltLength = salt.count
+        let tmpSaltLength = defaultSalt.count
+        if (saltLength < tmpSaltLength) {
+            salt = String(defaultSalt.prefix(saltLength + 1))
+        }
+    }
+    
+    private func saltButtonControl() async {
+        if (!isButtonsInvalid) {
+            let saltLength = salt.count
+            let tmpSaltLength = defaultSalt.count
+            if (saltLength == tmpSaltLength) {
+                isRightButtonInvalid = true
+            } else {
+                isRightButtonInvalid = false
+            }
+            if (salt.utf8.count < 8) {
+                isLeftButtonInvalid = true
+            } else {
+                isLeftButtonInvalid = false
+            }
+        }
+    }
+    
+    private func inputButton() async {
+        isLeftButtonInvalid = true
+        isRightButtonInvalid = true
+        isButtonsInvalid = true
+        salt = ""
     }
 }
