@@ -153,6 +153,7 @@ struct PasswordInputView: View {
         do {
             isProcessing = true
             message = "⚠️ 現在設定中です。お待ちください。"
+            warning = ""
             try await CryptoBoxerManager.shared.makeKey(password, salt, memorySize, iterations, parallelism)
         } catch {
             warning = "鍵の生成に失敗しました。"
@@ -174,7 +175,9 @@ struct PasswordInputView: View {
     }
     
     private func leftButton() async {
-        salt = String(salt.dropLast())
+        if (salt.utf8.count > 8){
+            salt = String(salt.dropLast())
+        }
     }
     
     private func rightButton() async {
@@ -194,7 +197,7 @@ struct PasswordInputView: View {
             } else {
                 isRightButtonInvalid = false
             }
-            if (saltLength <= 1) {
+            if (salt.utf8.count < 8) {
                 isLeftButtonInvalid = true
             } else {
                 isLeftButtonInvalid = false
