@@ -9,7 +9,7 @@ struct PasswordInputView: View {
     @State private var message: String = ""
     @State private var warning: String = ""
     @State private var iterations = 30
-    @State private var salt = "CryptoBoxer"
+    @State private var salt = "CryptoBoxerSalt"
     let memorySize = 65536
     let parallelism = 4
     @State private var passRePassword = false
@@ -18,7 +18,7 @@ struct PasswordInputView: View {
     @State private var isLeftButtonInvalid = false
     @State private var isRightButtonInvalid = true
     @State private var isButtonsInvalid = false
-    @State private var tmpSalt = "CryptoBookmark"
+    @State private var tmpSalt = "CryptoBoxerSalt"
     
     var body: some View{
         VStack {
