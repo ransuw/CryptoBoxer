@@ -18,7 +18,6 @@ struct PasswordInputView: View {
     @State private var isLeftButtonInvalid = false
     @State private var isRightButtonInvalid = true
     @State private var isButtonsInvalid = false
-    @State private var tmpSalt = "CryptoBoxerSalt"
     
     var body: some View{
         VStack {
@@ -180,18 +179,19 @@ struct PasswordInputView: View {
         }
     }
     
+    let defaultSalt = "CryptoBoxerSalt"
     private func rightButton() async {
         let saltLength = salt.count
-        let tmpSaltLength = tmpSalt.count
+        let tmpSaltLength = defaultSalt.count
         if (saltLength < tmpSaltLength) {
-            salt = String(tmpSalt.prefix(saltLength + 1))
+            salt = String(defaultSalt.prefix(saltLength + 1))
         }
     }
     
     private func saltButtonControl() async {
         if (!isButtonsInvalid) {
             let saltLength = salt.count
-            let tmpSaltLength = tmpSalt.count
+            let tmpSaltLength = defaultSalt.count
             if (saltLength == tmpSaltLength) {
                 isRightButtonInvalid = true
             } else {
