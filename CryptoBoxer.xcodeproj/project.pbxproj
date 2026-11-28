@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		DC692CE530A1BA3900EF9B9E /* SwiftArgon2 in Frameworks */ = {isa = PBXBuildFile; productRef = DC692CE430A1BA3900EF9B9E /* SwiftArgon2 */; };
 		DC692CE830A1BAB000EF9B9E /* SwiftArgon2 in Frameworks */ = {isa = PBXBuildFile; productRef = DC692CE730A1BAB000EF9B9E /* SwiftArgon2 */; };
+		DCE14A2530BA6F7D005FBA55 /* SwiftArgon2 in Frameworks */ = {isa = PBXBuildFile; productRef = DCE14A2430BA6F7D005FBA55 /* SwiftArgon2 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DC692CE530A1BA3900EF9B9E /* SwiftArgon2 in Frameworks */,
+				DCE14A2530BA6F7D005FBA55 /* SwiftArgon2 in Frameworks */,
 				DC692CE830A1BAB000EF9B9E /* SwiftArgon2 in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -74,6 +76,7 @@
 			packageProductDependencies = (
 				DC692CE430A1BA3900EF9B9E /* SwiftArgon2 */,
 				DC692CE730A1BAB000EF9B9E /* SwiftArgon2 */,
+				DCE14A2430BA6F7D005FBA55 /* SwiftArgon2 */,
 			);
 			productName = ImageVault;
 			productReference = CCB8AD1A2F628C2000075789 /* CryptoBoxer.app */;
@@ -104,7 +107,7 @@
 			mainGroup = CCB8AD112F628C1F00075789;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				DC692CE630A1BAB000EF9B9E /* XCLocalSwiftPackageReference "argon2-swift" */,
+				DCE14A2330BA6F7D005FBA55 /* XCRemoteSwiftPackageReference "argon2-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CCB8AD1B2F628C2000075789 /* Products */;
@@ -289,7 +292,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = OrganizationIdentifierTest.CryptoBoxer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -332,7 +335,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = OrganizationIdentifierTest.CryptoBoxer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -368,12 +371,16 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		DC692CE630A1BAB000EF9B9E /* XCLocalSwiftPackageReference "argon2-swift" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "argon2-swift";
+/* Begin XCRemoteSwiftPackageReference section */
+		DCE14A2330BA6F7D005FBA55 /* XCRemoteSwiftPackageReference "argon2-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mimiclone/argon2-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		DC692CE430A1BA3900EF9B9E /* SwiftArgon2 */ = {
@@ -382,6 +389,11 @@
 		};
 		DC692CE730A1BAB000EF9B9E /* SwiftArgon2 */ = {
 			isa = XCSwiftPackageProductDependency;
+			productName = SwiftArgon2;
+		};
+		DCE14A2430BA6F7D005FBA55 /* SwiftArgon2 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DCE14A2330BA6F7D005FBA55 /* XCRemoteSwiftPackageReference "argon2-swift" */;
 			productName = SwiftArgon2;
 		};
 /* End XCSwiftPackageProductDependency section */
